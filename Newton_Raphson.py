@@ -1,7 +1,7 @@
 #!/usr/bin/env python3
 
 from scipy import optimize
-import timeit
+import numpy as np
 
 
 def f(x):
@@ -56,6 +56,30 @@ def newton_raphson(f, guess):
     return fixed_point(newton_transform(f), guess)
 
 
+def fNikuradse(fw, Rew):
+    """Nikuradse equation modified by for solving in a Newton-Raphson scheme.
+
+    """
+    nikuradse = (fw * (0.86 * np.log(4 * Rew * np.sqrt(fw)) - 0.8) ** 2
+                 - 1)
+    return nikuradse
+
+
+def fChezy_wall(xRef):
+    """Computes the Chezy friction coefficient for the wall region"""
+    # Do a first estimate of fw0 with the Blasius equation, as modified by
+    # Chiew and Parker in 1994
+    fw0 = 0.301 * xRef ** 0.2
+    Rew0 = fw0 / xRef
+    convergence = False
+    while not convergence:
+        Rew1 = Rew0
+        fw0 = newton_raphson(lambda fw: fNikuradse(fw, Rew0), 0.01)
+        Rew0 = fw0 / xRef
+        convergence = good_enough(Rew1, Rew0)
+    fw = fw0 / 8
+    return fw, Rew0
+
 # fprime is not provided so we use Secant method
 root = optimize.newton(f, 1.5)
 
@@ -72,4 +96,10 @@ root3 = optimize.newton(f, 1.5, fprime=lambda x: 3 * x**2,
 root4 = newton_raphson(f, 1.5)
 
 
-print(root, root1, root2, root3, root4)
+def main():
+    print(root, root1, root2, root3, root4)
+    return
+
+
+if __name__ == '__main__':
+    main()
